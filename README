@@ -1,0 +1,15 @@
+Cpp Containers
+==============
+
+Cpp Containers is a C++ STL-like set of template container classes.
+They complement STL standard containers with specialized ones.
+They are design to be compatible with STL algorithms and iterator manipulations.
+Header only, you can use them directly from installation on your system.
+Stand-alone and BSD-like licence, you can include them directly in your project sources.
+
+Available containers:
+=====================
+ - container::tape : memory consecutive dynamic array of elements with constant-time insertion before and after existing items (a vector with O(1) push_front).
+
+And more to come ...
+
