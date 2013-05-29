@@ -136,9 +136,43 @@ namespace container
 	};
 	
 	/**
-	 * Tape container template class.
+	 * Tapes are sequence containers representing arrays that can change in size (like STL vectors).
 	 *
-	 * A tape is a vector but with constant front inserting complexity.
+	 * Introduction
+	 * ============
+	 *
+	 * Just like arrays and vectors, tapes use contiguous storage locations for their elements,
+	 * which means that their elements can also be accessed using offsets on regular pointers to its elements,
+	 * and just as efficiently as in arrays.
+	 *
+	 * Like vectors but unlike arrays, their size can change dynamically, with their storage being handled automatically by the container.
+	 * Internally, tapes use a dynamically allocated array to store their elements.
+	 * This array may need to be reallocated in order to grow in size when new elements are inserted,
+	 * which implies allocating a new array and moving all elements to it.
+	 * This is a relatively expensive task in terms of processing time, and thus,
+	 * tapes do not reallocate each time an element is added to the container.
+	 * Instead, tape containers may allocate some extra storage to accommodate for possible growth,
+	 * and thus the container may have an actual capacity greater than the storage strictly needed to contain its elements (i.e., its size).
+	 *
+	 * Compared to the other dynamic sequence containers (deques, lists and forward_lists),
+	 * tapes, like vectors, are very efficient accessing its elements (just like arrays)
+	 * and relatively efficient adding or removing elements from its begining and end.
+	 * For operations that involve inserting or removing elements at positions other than the begining and  end,
+	 * they perform worse than the others, and have less consistent iterators and references than lists and forward_lists.
+	 * 
+	 * Container properties
+	 * ====================
+	 *
+	 * - **Sequence** : Elements in sequence containers are ordered in a strict linear sequence.
+	 * Individual elements are accessed by their position in this sequence.
+	 * - **Dynamic array** : Allows direct access to any element in the sequence, even through pointer arithmetics,
+	 * and provides relatively fast addition/removal of elements at the end of the sequence.
+	 * - **Allocator-aware** : The container uses an allocator object to dynamically handle its storage needs.
+     *
+     *
+	 * \tparam T Type of the elements. Only if T is guaranteed to not throw while moving, implementations can optimize to move elements instead of copying them during reallocations. Aliased as member type tape::value_type.
+	 *
+     * \tparam Allocator Type of the allocator object used to define the storage allocation model. By default, the allocator class template is used, which defines the simplest memory allocation model and is value-independent. Aliased as member type tape::allocator_type.
 	 */
 	template <typename T, typename Allocator = std::allocator<T> >
 	class tape
@@ -147,24 +181,24 @@ namespace container
 	public:
 		/**
 		 * 
-		 * STL type definitions:
+		 * \name STL type definitions:
 		 * 
 		 * \{ */
-		typedef T											value_type;
-		typedef Allocator									allocator_type;
+		typedef T											value_type;			//!< The type of object stored in the vector. The first template parameter (T).
+		typedef Allocator									allocator_type;		//!< The type of allocator used for internal memory management. The second template parameter (Allocator). Defaults to std::allocator<value_type>.
 
-		typedef typename allocator_type::reference			reference;
-		typedef typename allocator_type::const_reference	const_reference;
-		typedef typename allocator_type::pointer			pointer;
-		typedef typename allocator_type::const_pointer		const_pointer;
+		typedef typename allocator_type::reference			reference;			//!< Reference to the stored element.
+		typedef typename allocator_type::const_reference	const_reference;	//!< Const reference to the stored element.
+		typedef typename allocator_type::pointer			pointer;			//!< Pointer to the stored element.
+		typedef typename allocator_type::const_pointer		const_pointer;		//!< Const pointer to the stored element.
 
-		typedef tape_iterator<T>							iterator;
-		typedef tape_const_iterator<T>						const_iterator;
-		typedef std::reverse_iterator<iterator>				reverse_iterator;
-		typedef std::reverse_iterator<const_iterator>		const_reverse_iterator;
+		typedef tape_iterator<value_type>					iterator;			//!< Random access iterator to value_type.
+		typedef tape_const_iterator<value_type>				const_iterator;		//!< Random access iterator to const value_type.
+		typedef std::reverse_iterator<iterator>				reverse_iterator;	//!< Reverse iterator to value_type.
+		typedef std::reverse_iterator<const_iterator>		const_reverse_iterator;	//!< Reverse iterator to const value_type.
 			
-		typedef ptrdiff_t									difference_type;
-		typedef size_t										size_type;
+		typedef ptrdiff_t									difference_type;	//!< Signed integral type representing the distance between two stored objects. Identical to iterator_traits<iterator>::difference_type. Usually the same as ptrdiff_t.
+		typedef size_t										size_type;			//!< Unsigned integral type that can represent any non-negative value of difference_type like a quantity of elments. Usually same as size_t.
 		/** \} */
 			
 	protected:
@@ -176,29 +210,47 @@ namespace container
 
 	public:
 		/**
-		 * Construct / Copy / Destroy
+		 * \name Construct / Copy / Destroy
 		 * \{ */
 
-		/** Default constructor. */
+		/** Default constructor.
+		 * Constructs an empty container, with no elements.
+		 * \param alloc Eventual allocator sample.
+		 */
 		explicit tape(const allocator_type& alloc = allocator_type()):
 		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{}
 
-		/** Filling constructor. */
+		/** Filling constructor.
+		 * Constructs a container with n elements with default element value.
+		 * \param n Number of element to store in container.
+		 */
 		explicit tape(size_type n):
 		_alloc(), _base(0), _start(0), _size(0), _capacity(0)
 		{
 			this->resize(n);
 		}
 
-		/** Filling constructor. */
+		/** Filling constructor.
+		 * Constructs a container with n elements with specified element value.
+		 * \param n Number of element to store in container.
+		 * \param val Value to fill the container with. Each of the n elements in the container will be initialized to a copy of this value.
+		 * \param alloc Eventual allocator sample.
+		 */
 		explicit tape(size_type n, const value_type& val, const allocator_type& alloc = allocator_type()):
 		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{
 			this->resize(n, val);
 		}
 
-		/** Range constructor. */
+		/** Range constructor.
+		 * Constructs a container with as many elements as the range [first,last),
+		 * with each element constructed from its corresponding element in that range, in the same order.
+		 * \tparam InputIterator Iterator type used to fill the container.
+		 * \param first Input iterators to the initial positions in a range.
+		 * \param last Input iterators to the final positions in a range.
+		 * \param alloc Eventual allocator sample.
+		 */
 		template <class InputIterator>
 		tape(InputIterator first, InputIterator last, const allocator_type& alloc = allocator_type()):
 		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
@@ -206,14 +258,21 @@ namespace container
 			this->assign(first, last);
 		}
 
-		/** Copy constructor. */
+		/** Copy constructor.
+		 * Constructs a container with a copy of each of the elements in x, in the same order.
+		 * \param x Another tape object of the same type (with the same class template arguments T and Alloc), whose contents are either copied or acquired.
+		 */
 		tape( const tape& x):
 		_alloc(x._alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{
 			this->assign(x.begin(), x.end());
 		}
 
-		/** Copy constructor. */
+		/** Copy constructor.
+		 * Constructs a container with a copy of each of the elements in x, in the same order.
+		 * \param x Another tape object of the same type (with the same class template arguments T and Alloc), whose contents are either copied or acquired.
+		 * \param alloc Eventual allocator sample.
+		 */
 		tape( const tape& x, const allocator_type& alloc):
 		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{
@@ -228,7 +287,12 @@ namespace container
 			this->_deallocate();
 		}
 
-		/** Copy assignment. */
+		/** Copy assignment.
+		 * Assigns new contents to the container, replacing its current contents, and modifying its size accordingly.
+		 * The container preserves its current allocator, which is used to allocate storage in case of reallocation.
+		 * Any elements held in the container before the call are either assigned to or destroyed.
+		 * \param x A tape object of the same type (i.e., with the same template parameters, T and Alloc).
+		 */
 		tape& operator=(const tape& x)
 		{
 			if(&x != this)
@@ -241,36 +305,138 @@ namespace container
 
 
 		/**
-		 * Iterators
+		 * \name Iterators
 		 * \{ */
 
+		/** Returns an iterator pointing to the first element in the vector.
+		 * Notice that, unlike member tape::front, which returns a reference to the first element,
+		 * this function returns a random access iterator pointing to it.
+		 * If the container is empty, the returned iterator value shall not be dereferenced.
+		 * \return A random access iterator to the beginning of the sequence container.
+		 */
 		iterator begin() {return iterator(_start);}
+
+		/** Returns a const iterator pointing to the first element in the vector.
+		 * Notice that, unlike member tape::front, which returns a reference to the first element,
+		 * this function returns a constant random access iterator pointing to it.
+		 * If the container is empty, the returned iterator value shall not be dereferenced.
+		 * \return A constant random access iterator to the beginning of the sequence container.
+		 */
 		const_iterator begin()const {return const_iterator(_start);}
+
+		/** Returns a const iterator pointing to the first element in the vector.
+		 * Notice that, unlike member tape::front, which returns a reference to the first element,
+		 * this function returns a constant random access iterator pointing to it.
+		 * If the container is empty, the returned iterator value shall not be dereferenced.
+		 * \return A constant random access iterator to the beginning of the sequence container.
+		 */
 		const_iterator cbegin()const {return const_iterator(_start);}
 
+		/** Returns an iterator referring to the past-the-end element in the tape container.
+		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
+		 * It does not point to any element, and thus shall not be dereferenced.
+		 * Because the ranges used by functions of the standard library do not include the element pointed by their closing iterator,
+		 * this function is often used in combination with tape::begin to specify a range including all the elements in the container.
+		 * If the container is empty, this function returns the same as tape::begin.
+		 * \return A random access iterator to the element past the end of the sequence.
+		 */
 		iterator end() {return iterator(_start+_size);}
+		
+		/** Returns a const iterator referring to the past-the-end element in the tape container.
+		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
+		 * It does not point to any element, and thus shall not be dereferenced.
+		 * Because the ranges used by functions of the standard library do not include the element pointed by their closing iterator,
+		 * this function is often used in combination with tape::begin to specify a range including all the elements in the container.
+		 * If the container is empty, this function returns the same as tape::begin.
+		 * \return A constant random access iterator to the element past the end of the sequence.
+		 */
 		const_iterator end()const {return const_iterator(_start+_size);}
+
+		/** Returns a const iterator referring to the past-the-end element in the tape container.
+		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
+		 * It does not point to any element, and thus shall not be dereferenced.
+		 * Because the ranges used by functions of the standard library do not include the element pointed by their closing iterator,
+		 * this function is often used in combination with tape::begin to specify a range including all the elements in the container.
+		 * If the container is empty, this function returns the same as tape::begin.
+		 * \return A constant random access iterator to the element past the end of the sequence.
+		 */
 		const_iterator cend()const {return const_iterator(_start+_size);}
 
+		/** Returns a reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
+		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
+		 * rbegin points to the element right before the one that would be pointed to by member end.
+		 * Notice that unlike member tape::back, which returns a reference to this same element, this function returns a reverse random access iterator.
+		 * \return A reverse iterator to the reverse beginning of the sequence container.
+		 */
 		reverse_iterator rbegin() {return reverse_iterator(end());}
+
+		/** Returns a const reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
+		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
+		 * rbegin points to the element right before the one that would be pointed to by member end.
+		 * Notice that unlike member tape::back, which returns a reference to this same element, this function returns a reverse random access iterator.
+		 * \return A constant reverse iterator to the reverse beginning of the sequence container.
+		 */
 		const_reverse_iterator rbegin()const {return const_reverse_iterator(end());}
+
+		/** Returns a const reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
+		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
+		 * rbegin points to the element right before the one that would be pointed to by member end.
+		 * Notice that unlike member tape::back, which returns a reference to this same element, this function returns a reverse random access iterator.
+		 * \return A constant reverse iterator to the reverse beginning of the sequence container.
+		 */
 		const_reverse_iterator crbegin()const {return const_reverse_iterator(end());}
 
+		/** Returns a reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
+		 * The range between tape::rbegin and tape::rend contains all the elements of the tape (in reverse order).
+		 * \return A reverse iterator to the reverse end of the sequence container.
+		 */
 		reverse_iterator rend() {return reverse_iterator(begin());}
+
+		/** Returns a const reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
+		 * The range between tape::rbegin and tape::rend contains all the elements of the tape (in reverse order).
+		 * \return A constant reverse iterator to the reverse end of the sequence container.
+		 */
 		const_reverse_iterator rend()const {return const_reverse_iterator(begin());}
+
+		/** Returns a const reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
+		 * The range between tape::crbegin and tape::crend contains all the elements of the tape (in reverse order).
+		 * \return A constant reverse iterator to the reverse end of the sequence container.
+		 */
 		const_reverse_iterator crend()const {return const_reverse_iterator(begin());}		
 
 		/** \} */
 
 		/**
-		 * Capacity
+		 * \name Capacity
 		 * \{ */		
 
+		/** Returns whether the vector is empty (i.e. whether its size is 0).
+		 * This function does not modify the container in any way.
+		 * To clear the content of a tape, see tape::clear.
+		 * \return true if the container size is 0, false otherwise.
+		 */
 		bool empty()const {return this->_size==0;}
+		
+		/** Returns the number of elements in the tape.
+		 * This is the number of actual objects held in the tape, which is not necessarily equal to its storage capacity.
+		 * \return The number of elements in the container.
+		 */
 		size_type size()const {return this->_size;}
+		
+		/** Returns the maximum number of elements that the tape can hold.
+		 * This is the maximum potential size the container can reach due to known system or library implementation limitations,
+		 * but the container is by no means guaranteed to be able to reach that size: it can still fail to allocate storage at any point before that size is reached.
+		 * \return The maximum number of elements a tape container can hold as content.
+		 */
 		size_type max_size() const {return _alloc.max_size();}
 
-		/** Resizes the container so that it contains n elements. */
+		/** Resizes the container so that it contains n elements.
+		 * If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
+		 * If n is greater than the current container size, the content is expanded by inserting at the end as many elements as needed to reach a size of n.
+		 * If n is also greater than the current container capacity, an automatic reallocation of the allocated storage space takes place.
+		 * Notice that this function changes the actual content of the container by inserting or erasing elements from it.
+		 * \param new_size New container size, expressed in number of elements.
+		 */
 		void resize(size_type new_size)
 		{
 			if(new_size < size())
@@ -291,7 +457,15 @@ namespace container
 			}
 		}
 
-		/** Resizes the container so that it contains n elements. */
+		/** Resizes the container so that it contains n elements.
+		 * If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
+		 * If n is greater than the current container size, the content is expanded by inserting at the end as many elements as needed to reach a size of n.
+		 * The new elements are initialized as copies of val, otherwise, they are value-initialized.
+		 * If n is also greater than the current container capacity, an automatic reallocation of the allocated storage space takes place.
+		 * Notice that this function changes the actual content of the container by inserting or erasing elements from it.
+		 * \param new_size New container size, expressed in number of elements.
+		 * \param val Object whose content is copied to the added elements in case that n is greater than the current container size.
+		 */
 		void resize(size_type new_size, const value_type& val)
 		{
 			if(new_size < size())
@@ -309,19 +483,34 @@ namespace container
 			}
 		}
 
-		/** Return size of allocated storage capacity. */
+		/** Returns the size of the storage space currently allocated for the tape, expressed in terms of elements.
+		 * This capacity is not necessarily equal to the tape size.
+		 * It can be equal or greater, with the extra space allowing to accommodate for growth without the need to reallocate on each insertion.
+		 * Notice that this capacity does not suppose a limit on the size of the tape.
+		 * When this capacity is exhausted and more is needed, it is automatically expanded by the container (reallocating it storage space).
+		 * The theoretical limit on the size of a tape is given by member max_size.
+		 * \return The size of the currently allocated storage capacity in the tape, measured in terms of the number elements it can hold.
+		 */
 		size_type capacity() const
 		{
 			return _capacity;
 		}
 
-		/** Return size of storage available memory before used space. */
+		/** Returns the size of the storage space currently allocated for the tape, available before the first element, expressed in terms of elements.
+		 * This capacity is the number of elements which can be prepended without having to reallocate memory.
+		 * When this capacity is exhausted and more is needed, it is automatically expanded by the container (reallocating it storage space).
+		 * \return The size of the currently allocated storage capacity free to prepend elements in the tape, measured in terms of the number elements it can hold.
+		 */
 		size_type capacity_before() const
 		{
 			return _start - _base;
 		}
 
-		/** Return size of storage available memory after used space. */
+		/** Returns the size of the storage space currently allocated for the tape, available after the last element, expressed in terms of elements.
+		 * This capacity is the number of elements which can be append without having to reallocate memory.
+		 * When this capacity is exhausted and more is needed, it is automatically expanded by the container (reallocating it storage space).
+		 * \return The size of the currently allocated storage capacity free to append elements in the tape, measured in terms of the number elements it can hold.
+		 */
 		size_type capacity_after() const
 		{
 			return _capacity - ( capacity_before() + _size) ;
@@ -354,7 +543,9 @@ namespace container
 				_reallocate(capacity_before(), after);
 		}
 
-		/** Requests the container to reduce its capacity to fit its size. */
+		/** Requests the container to reduce its capacity to fit its size.
+		 * The request is non-binding, and the container implementation is free to optimize otherwise and leave the tape with a capacity greater than its size.
+		 * This may cause a reallocation, but has no effect on the tape size and cannot alter its elements. */
 		void shrink_to_fit()
 		{
 			_reallocate(0, 0);
@@ -364,7 +555,7 @@ namespace container
 
 
 		/**
-		 * Element and data access
+		 * \name Element and data access
 		 * \{ */			
 
 		reference front() {return _start[0];}
@@ -383,7 +574,7 @@ namespace container
 
 
 		/**
-		 * Modifiers 
+		 * \name Modifiers 
 		 * \{ */			
 
 		/** Assigns new contents to the tape, replacing its current contents, and modifying its size accordingly.*/
@@ -715,7 +906,7 @@ namespace container
 
 
 		/**
-		 * Allocator 
+		 * \name Allocator 
 		 * \{ */
 		/** Returns a copy of the allocator object associated with the tape. */
 		allocator_type get_allocator() const
