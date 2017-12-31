@@ -10,6 +10,7 @@
 #include <memory>
 #include <algorithm>
 #include <stdexcept>
+#include <initializer_list>
 #include <iterator>
 #include <utility>
 
@@ -275,7 +276,16 @@ namespace container
 			other._size = other._capacity = 0;
 		}
 
-		// TODO Add initializer list constroctors.
+		/** Initializer list constructor.
+		 * Constructs the container with the contents of the initializer list init.
+		 * \param init Initializer list to initialize the elements of the container with.
+		 * \param alloc Eventual allocator sample.
+		 */
+		tape(std::initializer_list<T> init, const Allocator& alloc = Allocator()):
+		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		{
+			this->assign(init.begin(), init.end());
+		}
 
 		~tape()
 		{
@@ -313,7 +323,15 @@ namespace container
 			return *this;
 		}
 
-		// TODO Add initializer list assignment operators.
+		/** Initializer list assignment operator
+		 * Replaces the contents with those identified by initializer list ilist.
+		 * \param ilist Initializer list to use as data source.
+		 */
+		tape& operator=( std::initializer_list<T> ilist )
+		{
+			this->assign(ilist.begin(), ilist.end());
+			return *this;
+		}
 			
 		/** \} */
 
