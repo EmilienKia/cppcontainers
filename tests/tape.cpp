@@ -88,6 +88,20 @@ TEST_CASE( "Tape copy construction", "[tape]" ) {
 	    CHECK( tape2[n] == tape1[n] );
 }
 
+TEST_CASE( "Tape move construction", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	container::tape<int> tape1(source, source+10);
+	container::tape<int> tape2(std::move(tape1));
+
+	CHECK( tape1.size() == 0 );
+	CHECK( tape1.capacity() == 0 );
+
+	CHECK( tape2.size() == 10 );
+	CHECK( tape2.front() == source[0] );
+	CHECK( tape2.back() == source[9] );
+	for(size_t n=0; n<tape2.size(); ++n)
+	    CHECK( tape2[n] == source[n] );
+}
 
 TEST_CASE( "Tape copy assignement", "[tape]" ) {
 	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -101,6 +115,23 @@ TEST_CASE( "Tape copy assignement", "[tape]" ) {
 	CHECK( tape2.back() == tape1.back() );
 	for(size_t n=0; n<tape2.size(); ++n)
 	    CHECK( tape2[n] == tape1[n] );
+}
+
+TEST_CASE( "Tape move assignement", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	container::tape<int> tape1(source, source+10);
+	container::tape<int> tape2;
+
+	tape2 = std::move(tape1);
+
+	CHECK( tape1.size() == 0 );
+	CHECK( tape1.capacity() == 0 );
+
+	CHECK( tape2.size() == 10 );
+	CHECK( tape2.front() == source[0] );
+	CHECK( tape2.back() == source[9] );
+	for(size_t n=0; n<tape2.size(); ++n)
+	    CHECK( tape2[n] == source[n] );
 }
 
 TEST_CASE( "Tape iterator begin", "[tape]" ) {

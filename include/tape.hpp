@@ -261,7 +261,21 @@ namespace container
 			this->assign(x.begin(), x.end());
 		}
 
-		// TODO Add "move" and initializer list constroctors.
+		/** Move constructor. 
+		 * Constructs the container with the contents of other using move semantics.
+		 * Allocator is obtained by move-construction from the allocator belonging to other.
+		 * After the move, other is guaranteed to be empty().
+		 * \param other Another tape object to be used as source to initialize the elements of the container with.
+		 */
+		tape(tape&& other):
+		_alloc(std::move(other._alloc)),
+		_base(other._base), _start(other._start), _size(other._size), _capacity(other._capacity)
+		{
+			other._base = other._start = nullptr;
+			other._size = other._capacity = 0;
+		}
+
+		// TODO Add initializer list constroctors.
 
 		~tape()
 		{
@@ -279,9 +293,27 @@ namespace container
 		{
 			if(&x != this)
 				this->assign(x.begin(), x.end());
+			return *this;
 		}
 
-		// TODO Add "move" and initializer list assignment operators.
+		/**
+		 * Move assignment operator.
+		 * Replaces the contents with those of other using move semantics.
+		 * \param other Another tape to use as data source 
+		 */
+		tape& operator=(tape&& other)
+		{
+			_alloc = std::move(other._alloc);
+			_base = other._base;
+			_start = other._start;
+			_size = other._size;
+			_capacity = other._capacity;
+			other._base = other._start = nullptr;
+			other._size = other._capacity = 0;
+			return *this;
+		}
+
+		// TODO Add initializer list assignment operators.
 			
 		/** \} */
 
