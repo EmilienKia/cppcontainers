@@ -332,7 +332,7 @@ namespace container
 		 * \param init Initializer list to initialize the elements of the container with.
 		 * \param alloc Eventual allocator sample.
 		 */
-		tape(std::initializer_list<T> init, const Allocator& alloc = Allocator()):
+		tape(std::initializer_list<value_type> init, const Allocator& alloc = Allocator()):
 		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{
 			this->assign(init.begin(), init.end());
@@ -384,7 +384,7 @@ namespace container
 		 * Replaces the contents with those identified by initializer list ilist.
 		 * \param ilist Initializer list to use as data source.
 		 */
-		tape& operator=( std::initializer_list<T> ilist )
+		tape& operator=( std::initializer_list<value_type> ilist )
 		{
 			this->assign(ilist.begin(), ilist.end());
 			return *this;
@@ -816,7 +816,16 @@ namespace container
 			}
 		}
 
-		// TODO Add assign with initializer list
+#if   __cplusplus >= 201103L // (since C++11)
+		/**
+		 * Replaces the contents of the container with the elements from the initializer list ilist.
+		 * \param ilist Initializer list to copy the values from.
+		 */
+		void assign(std::initializer_list<value_type> ilist)
+		{
+			this->assign(ilist.begin(), ilist.end());
+		}
+#endif
 
 		/** Adds a new element at the end of the tape, after its current last element. The content of val is copied (or moved) to the new element. */
 		void push_back(const value_type& val)
@@ -1018,7 +1027,15 @@ namespace container
 #endif
 		}
 
-		// TODO Add insert with move and initializer_list
+		// TODO Add insert with move
+
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Inserts elements from initializer list ilist before pos.*/
+		iterator insert(const_iterator position, std::initializer_list<value_type> ilist)
+		{
+			return this->insert(position, ilist.begin(), ilist.end());
+		}
+#endif
 
 		/** Removes element from the tape. */
 #if   __cplusplus < 201103L // (until C++11)

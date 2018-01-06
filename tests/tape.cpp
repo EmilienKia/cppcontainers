@@ -391,6 +391,17 @@ TEST_CASE( "Tape filling assign", "[tape]" ) {
 }
 
 
+TEST_CASE( "Tape initializer assign", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	container::tape<int> tape;
+
+	tape.assign({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+	CHECK(tape.size() == 10 );
+	for(size_t n=0; n<tape.size(); ++n)
+	    CHECK( tape[n] == source[n] );
+}
+
 TEST_CASE( "Tape push back one from empty", "[tape]" ) {
 	container::tape<int> tape;
 	tape.push_back(42);
@@ -658,6 +669,37 @@ TEST_CASE( "Tape insert range", "[tape]" ) {
 	tape.insert(tape.end(), modifs, modifs+6);
 	vector.insert(vector.end(), modifs, modifs+6);
 	
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+}
+
+TEST_CASE( "Tape insert initializer list", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int modifs[] = {42, 1, 23, 456, 78, 9};
+	container::tape<int> tape(source, source+10);
+	std::vector<int> vector(source, source+10);
+
+	// Insert at begining
+	tape.insert(tape.begin(), {42, 1, 23, 456, 78, 9});
+	vector.insert(vector.begin(), {42, 1, 23, 456, 78, 9});
+
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+
+	// Insert at middle
+	tape.insert(tape.begin()+9, {42, 1, 23, 456, 78, 9});
+	vector.insert(vector.begin()+9, {42, 1, 23, 456, 78, 9});
+
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+
+	// Insert at end
+	tape.insert(tape.end(), {42, 1, 23, 456, 78, 9});
+	vector.insert(vector.end(), {42, 1, 23, 456, 78, 9});
+
 	CHECK( tape.size() == vector.size() );
 	for(size_t n=0; n<tape.size(); ++n)
 		CHECK( tape[n] == vector[n] );
