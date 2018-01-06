@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------------
-// Copyright (C) 2017 Emilien KIA
+// Copyright (C) 2017-2018 Emilien KIA
 //
 // Distributed under the Boost Software License, Version 1.0. 
 // (See accompanying file LICENSE or copy at 
