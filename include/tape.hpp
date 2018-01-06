@@ -827,7 +827,7 @@ namespace container
 		}
 #endif
 
-		/** Adds a new element at the end of the tape, after its current last element. The content of val is copied (or moved) to the new element. */
+		/** Adds a new element at the end of the tape, after its current last element. The content of val is copied to the new element. */
 		void push_back(const value_type& val)
 		{
 			if(capacity_after() < 1)
@@ -835,7 +835,7 @@ namespace container
 			_alloc.construct(_start+_size++, val);
 		}
 
-		/** Adds n new elements at the end of the tape, after its current last element. The content of val is copied (or moved) to the new element. */
+		/** Adds n new elements at the end of the tape, after its current last element. The content of val is copied to the new element. */
 		void push_back(const value_type& val, size_type n)
 		{
 			if(capacity_after() < n)
@@ -844,7 +844,7 @@ namespace container
 				_alloc.construct(_start+_size++, val);
 		}
 
-		/** Adds new elements at the end of the tape, after its current last element. The content of val is copied (or moved) to the new element. */
+		/** Adds new elements at the end of the tape, after its current last element. The content of val is copied to the new element. */
 		template <class InputIterator>			
 		void push_back(InputIterator first, InputIterator last)
 		{
@@ -856,7 +856,15 @@ namespace container
 			}
 		}
 
-		// TODO add push_back with move semantic
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Adds a new element at the end of the tape, after its current last element. The content of val is moved to the new element. */
+		void push_back(value_type&& value)
+		{
+			if(capacity_after() < 1)
+				reserve_after(64); // TODO Compute reservation size smarter.
+			_alloc.construct(_start+_size++, std::move(value));
+		}
+#endif
 
 		/** Removes the last element in the tape, effectively reducing the container size by one. */
 		void pop_back()
@@ -876,7 +884,7 @@ namespace container
 			}
 		}
 
-		/** Adds a new element at the begining of the tape, before its current first element. The content of val is copied (or moved) to the new element. */
+		/** Adds a new element at the begining of the tape, before its current first element. The content of val is copied to the new element. */
 		void push_front(const value_type& val)
 		{
 			if(capacity_before() < 1)
@@ -885,7 +893,7 @@ namespace container
 			++_size;
 		}
 
-		/** Adds n new elements at the begining of the tape, before its current first element. The content of val is copied (or moved) to the new element. */
+		/** Adds n new elements at the begining of the tape, before its current first element. The content of val is copied to the new element. */
 		void push_front(const value_type& val, size_type n)
 		{
 			if(capacity_before() < n)
@@ -895,7 +903,7 @@ namespace container
 				_alloc.construct(--_start, val);
 		}
 
-		/** Adds new elements at the begining of the tape, before its current first element. The content of val is copied (or moved) to the new element. */
+		/** Adds new elements at the begining of the tape, before its current first element. The content of val is copied to the new element. */
 		template <class InputIterator>			
 		void push_front(InputIterator first, InputIterator last)
 		{
@@ -917,7 +925,16 @@ namespace container
 			}
 		}
 
-		// TODO add push_front with move semantic
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Adds a new element at the begining of the tape, before its current first element. The content of val is moved to the new element. */
+		void push_front(value_type&& value)
+		{
+			if(capacity_before() < 1)
+				reserve_before(64); // TODO Compute reservation size smarter.
+			_alloc.construct(--_start, std::move(value));
+			++_size;
+		}
+#endif
 
 		/** Removes the first element in the tape, effectively reducing the container size by one. */
 		void pop_front()
@@ -964,6 +981,30 @@ namespace container
 
 			return iterator(_start + pos);
 		}
+
+#if   __cplusplus >= 201103L // (since C++11)
+		/** The tape is extended by inserting a new moved element before the element at the specified position, effectively increasing the container size by the number of elements inserted. */
+		iterator insert(const_iterator position, value_type&& val)
+		{
+			// TODO Optimize me
+
+			size_type pos = position - begin();
+
+			// Ensure tape has enought memory
+			reserve_before(1);
+
+			// Move elements before insertion iterator
+			_internal_move(_start-1, _start, _start + pos);
+			--_start;
+			++_size;
+
+			// Insert element
+			_alloc.construct(_start + pos, std::move(val));
+
+			return iterator(_start + pos);
+		}
+#endif
+
 
 		/** The tape is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted. */
 #if   __cplusplus < 201103L // (until C++11)
@@ -1026,8 +1067,6 @@ namespace container
 			return iterator(_start + pos);
 #endif
 		}
-
-		// TODO Add insert with move
 
 #if   __cplusplus >= 201103L // (since C++11)
 		/** Inserts elements from initializer list ilist before pos.*/
