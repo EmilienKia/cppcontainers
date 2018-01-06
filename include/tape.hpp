@@ -196,23 +196,29 @@ namespace container
 		 * \name Construct / Copy / Destroy
 		 * \{ */
 
+		/** Default constructor with allocator.
+		 * Constructs an empty container, with no elements.
+		 * \param alloc Eventual allocator sample.
+		 */
+#if   __cplusplus < 201402L // (until C++14)
+		explicit tape(const allocator_type& alloc = allocator_type())
+#elif __cplusplus >= 201402L && __cplusplus < 201703L // (since C++14)(until C++17)
+		explicit tape(const allocator_type& alloc)
+#else // (since C++17)
+		explicit tape( const Allocator& alloc ) noexcept
+#endif
+		:_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		{}
+
 		/** Default constructor.
 		 * Constructs an empty container, with no elements.
 		 * \param alloc Eventual allocator sample.
 		 */
-		explicit tape(const allocator_type& alloc = allocator_type()):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
-		{}
-
-		/** Filling constructor.
-		 * Constructs a container with n elements with default element value.
-		 * \param n Number of element to store in container.
-		 */
-		explicit tape(size_type n):
-		_alloc(), _base(0), _start(0), _size(0), _capacity(0)
-		{
-			this->resize(n);
-		}
+#if   __cplusplus >= 201402L && __cplusplus < 201703L // (since C++14)(until C++17)
+		tape() : tape( Allocator() ) {}
+#elif __cplusplus >= 201703L // (since C++17)
+		tape() noexcept(noexcept(Allocator())): tape( Allocator() ) {}
+#endif
 
 		/** Filling constructor.
 		 * Constructs a container with n elements with specified element value.
@@ -220,11 +226,33 @@ namespace container
 		 * \param val Value to fill the container with. Each of the n elements in the container will be initialized to a copy of this value.
 		 * \param alloc Eventual allocator sample.
 		 */
-		explicit tape(size_type n, const value_type& val, const allocator_type& alloc = allocator_type()):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+#if   __cplusplus < 201103L // (until C++11)
+		explicit tape(size_type n, const value_type& val = value_type(), const allocator_type& alloc = allocator_type())
+#else  // (since C++11)
+		tape(size_type n, const value_type& val, const allocator_type& alloc = allocator_type())
+#endif
+		:_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
 		{
 			this->resize(n, val);
 		}
+
+		/** Filling constructor.
+		 * Constructs a container with n elements with default element value.
+		 * \param n Number of element to store in container.
+		 */
+#if   __cplusplus >= 201103L && __cplusplus < 201402L // (since C++11)(until C++14)
+		explicit tape(size_type n):
+		_alloc(), _base(0), _start(0), _size(0), _capacity(0)
+		{
+			this->resize(n);
+		}
+#elif __cplusplus >= 201402L // (since C++14)
+		explicit tape(size_type n, const allocator_type& alloc = allocator_type()):
+		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		{
+			this->resize(n);
+		}
+#endif
 
 		/** Range constructor.
 		 * Constructs a container with as many elements as the range [first,last),
@@ -251,6 +279,7 @@ namespace container
 			this->assign(x.begin(), x.end());
 		}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Copy constructor.
 		 * Constructs a container with a copy of each of the elements in x, in the same order.
 		 * \param x Another tape object of the same type (with the same class template arguments T and Alloc), whose contents are either copied or acquired.
@@ -261,21 +290,43 @@ namespace container
 		{
 			this->assign(x.begin(), x.end());
 		}
+#endif
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Move constructor. 
 		 * Constructs the container with the contents of other using move semantics.
 		 * Allocator is obtained by move-construction from the allocator belonging to other.
 		 * After the move, other is guaranteed to be empty().
 		 * \param other Another tape object to be used as source to initialize the elements of the container with.
 		 */
-		tape(tape&& other):
-		_alloc(std::move(other._alloc)),
+		tape(tape&& other)
+#if   __cplusplus >= 201703L // (since C++17)
+			noexcept
+#endif
+		:_alloc(std::move(other._alloc)),
 		_base(other._base), _start(other._start), _size(other._size), _capacity(other._capacity)
 		{
 			other._base = other._start = nullptr;
 			other._size = other._capacity = 0;
 		}
+#endif
 
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Allocator-extended move constructor.
+		 * \param other Another tape object to be used as source to initialize the elements of the container with.
+		 * \param alloc Allocator sample.
+		 */
+		tape(tape&& other, const allocator_type& alloc):
+		_alloc(alloc),
+		_base(other._base), _start(other._start), _size(other._size), _capacity(other._capacity)
+		{
+			other._base = other._start = nullptr;
+			other._size = other._capacity = 0;
+		}
+#endif
+
+
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Initializer list constructor.
 		 * Constructs the container with the contents of the initializer list init.
 		 * \param init Initializer list to initialize the elements of the container with.
@@ -286,6 +337,7 @@ namespace container
 		{
 			this->assign(init.begin(), init.end());
 		}
+#endif
 
 		~tape()
 		{
@@ -306,12 +358,16 @@ namespace container
 			return *this;
 		}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/**
 		 * Move assignment operator.
 		 * Replaces the contents with those of other using move semantics.
 		 * \param other Another tape to use as data source 
 		 */
 		tape& operator=(tape&& other)
+#if   __cplusplus >= 201703L // (since C++17)
+		noexcept // TODO Review this
+#endif
 		{
 			_alloc = std::move(other._alloc);
 			_base = other._base;
@@ -322,6 +378,7 @@ namespace container
 			other._size = other._capacity = 0;
 			return *this;
 		}
+#endif
 
 		/** Initializer list assignment operator
 		 * Replaces the contents with those identified by initializer list ilist.
@@ -346,7 +403,11 @@ namespace container
 		 * If the container is empty, the returned iterator value shall not be dereferenced.
 		 * \return A random access iterator to the beginning of the sequence container.
 		 */
-		iterator begin() {return iterator(_start);}
+		iterator begin()
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return iterator(_start);}
 
 		/** Returns a const iterator pointing to the first element in the vector.
 		 * Notice that, unlike member tape::front, which returns a reference to the first element,
@@ -354,8 +415,13 @@ namespace container
 		 * If the container is empty, the returned iterator value shall not be dereferenced.
 		 * \return A constant random access iterator to the beginning of the sequence container.
 		 */
-		const_iterator begin()const {return const_iterator(_start);}
+		const_iterator begin()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return const_iterator(_start);}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Returns a const iterator pointing to the first element in the vector.
 		 * Notice that, unlike member tape::front, which returns a reference to the first element,
 		 * this function returns a constant random access iterator pointing to it.
@@ -363,6 +429,7 @@ namespace container
 		 * \return A constant random access iterator to the beginning of the sequence container.
 		 */
 		const_iterator cbegin()const {return const_iterator(_start);}
+#endif
 
 		/** Returns an iterator referring to the past-the-end element in the tape container.
 		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
@@ -372,7 +439,11 @@ namespace container
 		 * If the container is empty, this function returns the same as tape::begin.
 		 * \return A random access iterator to the element past the end of the sequence.
 		 */
-		iterator end() {return iterator(_start+_size);}
+		iterator end()
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return iterator(_start+_size);}
 		
 		/** Returns a const iterator referring to the past-the-end element in the tape container.
 		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
@@ -382,8 +453,13 @@ namespace container
 		 * If the container is empty, this function returns the same as tape::begin.
 		 * \return A constant random access iterator to the element past the end of the sequence.
 		 */
-		const_iterator end()const {return const_iterator(_start+_size);}
+		const_iterator end()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return const_iterator(_start+_size);}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Returns a const iterator referring to the past-the-end element in the tape container.
 		 * The past-the-end element is the theoretical element that would follow the last element in the tape.
 		 * It does not point to any element, and thus shall not be dereferenced.
@@ -393,6 +469,7 @@ namespace container
 		 * \return A constant random access iterator to the element past the end of the sequence.
 		 */
 		const_iterator cend()const {return const_iterator(_start+_size);}
+#endif
 
 		/** Returns a reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
 		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
@@ -400,7 +477,11 @@ namespace container
 		 * Notice that unlike member tape::back, which returns a reference to this same element, this function returns a reverse random access iterator.
 		 * \return A reverse iterator to the reverse beginning of the sequence container.
 		 */
-		reverse_iterator rbegin() {return reverse_iterator(end());}
+		reverse_iterator rbegin()
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return reverse_iterator(end());}
 
 		/** Returns a const reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
 		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
@@ -408,8 +489,13 @@ namespace container
 		 * Notice that unlike member tape::back, which returns a reference to this same element, this function returns a reverse random access iterator.
 		 * \return A constant reverse iterator to the reverse beginning of the sequence container.
 		 */
-		const_reverse_iterator rbegin()const {return const_reverse_iterator(end());}
+		const_reverse_iterator rbegin()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return const_reverse_iterator(end());}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Returns a const reverse iterator pointing to the last element in the tape (i.e., its reverse beginning).
 		 * Reverse iterators iterate backwards: increasing them moves them towards the beginning of the container.
 		 * rbegin points to the element right before the one that would be pointed to by member end.
@@ -417,25 +503,35 @@ namespace container
 		 * \return A constant reverse iterator to the reverse beginning of the sequence container.
 		 */
 		const_reverse_iterator crbegin()const {return const_reverse_iterator(end());}
+#endif
 
 		/** Returns a reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
 		 * The range between tape::rbegin and tape::rend contains all the elements of the tape (in reverse order).
 		 * \return A reverse iterator to the reverse end of the sequence container.
 		 */
-		reverse_iterator rend() {return reverse_iterator(begin());}
+		reverse_iterator rend()
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return reverse_iterator(begin());}
 
 		/** Returns a const reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
 		 * The range between tape::rbegin and tape::rend contains all the elements of the tape (in reverse order).
 		 * \return A constant reverse iterator to the reverse end of the sequence container.
 		 */
-		const_reverse_iterator rend()const {return const_reverse_iterator(begin());}
+		const_reverse_iterator rend()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return const_reverse_iterator(begin());}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Returns a const reverse iterator pointing to the theoretical element preceding the first element in the tape (which is considered its reverse end).
 		 * The range between tape::crbegin and tape::crend contains all the elements of the tape (in reverse order).
 		 * \return A constant reverse iterator to the reverse end of the sequence container.
 		 */
 		const_reverse_iterator crend()const {return const_reverse_iterator(begin());}		
-
+#endif
 		/** \} */
 
 		/**
@@ -447,21 +543,34 @@ namespace container
 		 * To clear the content of a tape, see tape::clear.
 		 * \return true if the container size is 0, false otherwise.
 		 */
-		bool empty()const {return this->_size==0;}
+		bool empty()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return this->_size==0;}
 		
 		/** Returns the number of elements in the tape.
 		 * This is the number of actual objects held in the tape, which is not necessarily equal to its storage capacity.
 		 * \return The number of elements in the container.
 		 */
-		size_type size()const {return this->_size;}
+		size_type size()const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return this->_size;}
 		
 		/** Returns the maximum number of elements that the tape can hold.
 		 * This is the maximum potential size the container can reach due to known system or library implementation limitations,
 		 * but the container is by no means guaranteed to be able to reach that size: it can still fail to allocate storage at any point before that size is reached.
 		 * \return The maximum number of elements a tape container can hold as content.
 		 */
-		size_type max_size() const {return _alloc.max_size();}
+		size_type max_size() const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
+		{return _alloc.max_size();}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Resizes the container so that it contains n elements.
 		 * If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
 		 * If n is greater than the current container size, the content is expanded by inserting at the end as many elements as needed to reach a size of n.
@@ -488,6 +597,7 @@ namespace container
 				}
 			}
 		}
+#endif
 
 		/** Resizes the container so that it contains n elements.
 		 * If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
@@ -498,7 +608,11 @@ namespace container
 		 * \param new_size New container size, expressed in number of elements.
 		 * \param val Object whose content is copied to the added elements in case that n is greater than the current container size.
 		 */
+#if     __cplusplus < 201103L // (until C++11)
+		void resize(size_type new_size, value_type val = value_type() )
+#elif   __cplusplus >= 201103L // (since C++11)
 		void resize(size_type new_size, const value_type& val)
+#endif
 		{
 			if(new_size < size())
 			{
@@ -524,6 +638,9 @@ namespace container
 		 * \return The size of the currently allocated storage capacity in the tape, measured in terms of the number elements it can hold.
 		 */
 		size_type capacity() const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
 		{
 			return _capacity;
 		}
@@ -534,6 +651,9 @@ namespace container
 		 * \return The size of the currently allocated storage capacity free to prepend elements in the tape, measured in terms of the number elements it can hold.
 		 */
 		size_type capacity_before() const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
 		{
 			return _start - _base;
 		}
@@ -544,6 +664,9 @@ namespace container
 		 * \return The size of the currently allocated storage capacity free to append elements in the tape, measured in terms of the number elements it can hold.
 		 */
 		size_type capacity_after() const
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
 		{
 			return _capacity - ( capacity_before() + _size) ;
 		}
@@ -575,6 +698,7 @@ namespace container
 				_reallocate(capacity_before(), after);
 		}
 
+#if   __cplusplus >= 201103L // (since C++11)
 		/** Requests the container to reduce its capacity to fit its size.
 		 * The request is non-binding, and the container implementation is free to optimize otherwise and leave the tape with a capacity greater than its size.
 		 * This may cause a reallocation, but has no effect on the tape size and cannot alter its elements. */
@@ -582,6 +706,7 @@ namespace container
 		{
 			_reallocate(0, 0);
 		}
+#endif
 
 		/** \} */
 
@@ -598,9 +723,10 @@ namespace container
 		const_reference operator[](size_type n)const {return _start[n];}
 		reference at(size_type n) {_check_range(n); return _start[n];}
 		const_reference at(size_type n)const {_check_range(n); return _start[n];}
+#if   __cplusplus >= 201103L // (since C++11)
 		pointer data() {return _start;}
 		const_pointer data()const {return _start;}
-
+#endif
 		/** \} */
 
 
@@ -806,7 +932,11 @@ namespace container
 		}
 
 		/** The tape is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted. */
+#if   __cplusplus < 201103L // (until C++11)
+		iterator insert(iterator pos, const value_type& value )
+#else // (since C++11)
 		iterator insert(const_iterator position, const value_type& val)
+#endif
 		{
 			// TODO Optimize me
 			
@@ -827,30 +957,40 @@ namespace container
 		}
 
 		/** The tape is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted. */
-		iterator insert (const_iterator position, size_type n, const value_type& val)
+#if   __cplusplus < 201103L // (until C++11)
+		void insert( iterator position, size_type count, const T& value )
+#else // (since C++11)
+		iterator insert (const_iterator position, size_type count, const value_type& val)
+#endif
 		{
 			// TODO Optimize me
 
 			size_type pos = position - begin();
 
 			// Ensure tape has enought memory
-			reserve_before(n);
+			reserve_before(count);
 
 			// Move elements before insertion iterator
-			_internal_move(_start-n, _start, _start + pos);
-			_start -= n;
-			_size  += n;
+			_internal_move(_start-count, _start, _start + pos);
+			_start -= count;
+			_size  += count;
 
 			// Insert elements
-			for(pointer ptr = _start + pos; ptr < _start + pos + n; ++ptr)
+			for(pointer ptr = _start + pos; ptr < _start + pos + count; ++ptr)
 				_alloc.construct(ptr, val);
-			
+
+#if   __cplusplus >= 201103L // (since C++11)
 			return iterator(_start + pos);
+#endif
 		}
 
 		/** The tape is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted. */
 		template <class InputIterator>
+#if   __cplusplus < 201103L // (until C++11)
+		void insert(iterator position, InputIt first, InputIt last)
+#else // (since C++11)
 		iterator insert (const_iterator position, InputIterator first, InputIterator last)
+#endif
 		{
 			// TODO Optimize me
 
@@ -873,13 +1013,19 @@ namespace container
 				for(pointer ptr = _start + pos; first != last; ++ptr, first++)
 					_alloc.construct(ptr, *first);
 			}
+#if   __cplusplus >= 201103L // (since C++11)
 			return iterator(_start + pos);
+#endif
 		}
 
 		// TODO Add insert with move and initializer_list
 
 		/** Removes element from the tape. */
+#if   __cplusplus < 201103L // (until C++11)
+		iterator erase(iterator position)
+#else // (since C++11)
 		iterator erase(const_iterator position)
+#endif
 		{
 			// TODO Optimize me by testing if erased element is first or last one.
 
@@ -897,7 +1043,11 @@ namespace container
 		}
 
 		/** Removes range of elements ([first,last)) from the tape. */
+#if   __cplusplus < 201103L // (until C++11)
+		iterator erase(iterator first, iterator last)
+#else // (since C++11)
 		iterator erase(const_iterator first, const_iterator last)
+#endif
 		{
 			// TODO Optimize me by testing if erased elements are first or last ones.
 			if(first != last)
@@ -918,6 +1068,9 @@ namespace container
 
 		/** Exchanges the content of the container by the content of x, which is another tape object of the same type. Sizes may differ.*/
 		void swap(tape& x)
+#if   __cplusplus >= 201703L // (since C++17)
+		noexcept // TODO Review this
+#endif
 		{
 			std::swap(_alloc,    x._alloc);
 			std::swap(_base,     x._base);
@@ -928,6 +1081,9 @@ namespace container
 
 		/** Removes all elements from the tape (which are destroyed), leaving the container with a size of 0. */
 		void clear()
+#if   __cplusplus >= 201103L // (since C++11)
+			noexcept
+#endif
 		{
 			_destroy_all();
 		}
