@@ -866,6 +866,25 @@ namespace container
 		}
 #endif
 
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Adds a new element at the end of the tape, after its current last element. The new element is constructed emplace. */
+		template<class... Args>
+#if   __cplusplus < 201703L // (until C++17)
+		void
+#else // (since C++17)
+		reference
+#endif
+		emplace_back(Args&&... args)
+		{
+			if(capacity_after() < 1)
+				reserve_after(64); // TODO Compute reservation size smarter.
+			_alloc.construct(_start+_size++, std::forward<Args>(args)...);
+#if   __cplusplus >= 201703L // (since C++17)
+			return back();
+#endif
+		}
+#endif
+
 		/** Removes the last element in the tape, effectively reducing the container size by one. */
 		void pop_back()
 		{
@@ -936,6 +955,26 @@ namespace container
 		}
 #endif
 
+#if   __cplusplus >= 201103L // (since C++11)
+		/** Adds a new element at the begining of the tape, before its current first element. The new element is constructed emplace. */
+		template<class... Args>
+#if   __cplusplus < 201703L // (until C++17)
+		void
+#else // (since C++17)
+		reference
+#endif
+		emplace_front(Args&&... args)
+		{
+			if(capacity_before() < 1)
+				reserve_before(64); // TODO Compute reservation size smarter.
+			_alloc.construct(--_start, std::forward<Args>(args)...);
+			++_size;
+#if   __cplusplus >= 201703L // (since C++17)
+			return front();
+#endif
+		}
+#endif
+
 		/** Removes the first element in the tape, effectively reducing the container size by one. */
 		void pop_front()
 		{
@@ -1000,6 +1039,30 @@ namespace container
 
 			// Insert element
 			_alloc.construct(_start + pos, std::move(val));
+
+			return iterator(_start + pos);
+		}
+#endif
+
+#if   __cplusplus >= 201103L // (since C++11)
+		/** The tape is extended by inserting a new constructed element before the element at the specified position, effectively increasing the container size by the number of elements inserted. The element is created emplaced.*/
+		template< class... Args >
+		iterator emplace(const_iterator position, Args&&... args)
+		{
+			// TODO Optimize me
+
+			size_type pos = position - begin();
+
+			// Ensure tape has enought memory
+			reserve_before(1);
+
+			// Move elements before insertion iterator
+			_internal_move(_start-1, _start, _start + pos);
+			--_start;
+			++_size;
+
+			// Insert element
+			_alloc.construct(_start + pos, std::forward<Args>(args)...);
 
 			return iterator(_start + pos);
 		}
@@ -1143,8 +1206,6 @@ namespace container
 		{
 			_destroy_all();
 		}
-
-		// TODO add emplace emplace_back and emplace_front.
 
 		/** \} */
 

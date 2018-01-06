@@ -480,6 +480,29 @@ TEST_CASE( "Tape push back move", "[tape]" ) {
 }
 
 
+TEST_CASE( "Tape emplace back", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int verif[]  = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 42};
+	container::tape<int> tape(source, source+10);
+
+	tape.emplace_back(42);
+
+	CHECK( tape.size() == 11);
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == verif[n] );
+}
+
+TEST_CASE( "Tape emplace back pair", "[tape]" ) {
+	container::tape<std::pair<int, int>> tape{{1, 2}, {3, 4}};
+
+	tape.emplace_back(42, 43);
+
+	CHECK( tape.size() == 3);
+	CHECK( tape.back().first == 42);
+	CHECK( tape.back().second == 43);
+}
+
+
 TEST_CASE( "Tape push front one from epmty", "[tape]" ) {
 	container::tape<int> tape;
 	tape.push_front(42);
@@ -543,6 +566,30 @@ TEST_CASE( "Tape push front range", "[tape]" ) {
 	for(size_t n=0; n<tape.size(); ++n)
 		CHECK( tape[n] == verif[n] );
 }
+
+
+TEST_CASE( "Tape emplace front", "[tape]" ) {
+	int source[] =     {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int verif[]  = {42, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	container::tape<int> tape(source, source+10);
+
+	tape.emplace_front(42);
+
+	CHECK( tape.size() == 11);
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == verif[n] );
+}
+
+TEST_CASE( "Tape emplace front pair", "[tape]" ) {
+	container::tape<std::pair<int, int>> tape{{1, 2}, {3, 4}};
+
+	tape.emplace_front(42, 43);
+
+	CHECK( tape.size() == 3);
+	CHECK( tape.front().first == 42);
+	CHECK( tape.front().second == 43);
+}
+
 
 TEST_CASE( "Tape pop back one", "[tape]" ) {
 	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -665,6 +712,36 @@ TEST_CASE( "Tape insert one move", "[tape]" ) {
 		CHECK( tape[n] == vector[n] );
 }
 
+TEST_CASE( "Tape emplace", "[tape]" ) {
+	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+	container::tape<int> tape(source, source+10);
+	std::vector<int> vector(source, source+10);
+
+	// Insert at begining
+	tape.emplace(tape.begin(), 42);
+	vector.emplace(vector.begin(), 42);
+
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+
+	// Insert at middle
+	tape.emplace(tape.begin()+4, 42);
+	vector.emplace(vector.begin()+4, 42);
+
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+
+	// Insert at end
+	tape.emplace(tape.end(), 42);
+	vector.emplace(vector.end(), 42);
+
+	CHECK( tape.size() == vector.size() );
+	for(size_t n=0; n<tape.size(); ++n)
+		CHECK( tape[n] == vector[n] );
+}
 
 TEST_CASE( "Tape insert many", "[tape]" ) {
 	int source[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
