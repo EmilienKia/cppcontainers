@@ -39,7 +39,7 @@ namespace container
 		pointer _ptr;
 			
 	public:			
-		tape_iterator():_ptr(0){}
+		tape_iterator():_ptr(nullptr){}
 		explicit tape_iterator(pointer ptr):_ptr(ptr){}
 
 		pointer get_ptr()const {return _ptr;}
@@ -88,7 +88,7 @@ namespace container
 		pointer _ptr;
 
 	public:
-		tape_const_iterator():_ptr(0){}
+		tape_const_iterator():_ptr(nullptr){}
 		explicit tape_const_iterator(pointer ptr):_ptr(ptr){}
 		tape_const_iterator(const tape_iterator<T>& it):_ptr(it.get_ptr()){}
 
@@ -207,7 +207,7 @@ namespace container
 #else // (since C++17)
 		explicit tape( const Allocator& alloc ) noexcept
 #endif
-		:_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		:_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{}
 
 		/** Default constructor.
@@ -227,7 +227,7 @@ namespace container
 		 * \param alloc Eventual allocator sample.
 		 */
 		tape(size_type n, const value_type& val, const allocator_type& alloc = allocator_type())
-		:_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		:_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->resize(n, val);
 		}
@@ -238,13 +238,13 @@ namespace container
 		 */
 #if   /*__cplusplus >= 201103L &&*/ __cplusplus < 201402L // (since C++11)(until C++14)
 		explicit tape(size_type n):
-		_alloc(), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->resize(n);
 		}
 #elif __cplusplus >= 201402L // (since C++14)
 		explicit tape(size_type n, const allocator_type& alloc = allocator_type()):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->resize(n);
 		}
@@ -260,7 +260,7 @@ namespace container
 		 */
 		template <class InputIterator>
 		tape(InputIterator first, InputIterator last, const allocator_type& alloc = allocator_type()):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->assign(first, last);
 		}
@@ -270,7 +270,7 @@ namespace container
 		 * \param x Another tape object of the same type (with the same class template arguments T and Alloc), whose contents are either copied or acquired.
 		 */
 		tape( const tape& x):
-		_alloc(x._alloc), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(x._alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->assign(x.begin(), x.end());
 		}
@@ -281,7 +281,7 @@ namespace container
 		 * \param alloc Eventual allocator sample.
 		 */
 		tape( const tape& x, const allocator_type& alloc):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->assign(x.begin(), x.end());
 		}
@@ -322,7 +322,7 @@ namespace container
 		 * \param alloc Eventual allocator sample.
 		 */
 		tape(std::initializer_list<value_type> init, const Allocator& alloc = Allocator()):
-		_alloc(alloc), _base(0), _start(0), _size(0), _capacity(0)
+		_alloc(alloc), _base(nullptr), _start(nullptr), _size(0), _capacity(0)
 		{
 			this->assign(init.begin(), init.end());
 		}
@@ -517,7 +517,7 @@ namespace container
 		 * \return The maximum number of elements a tape container can hold as content.
 		 */
 		size_type max_size() const noexcept
-		{return _alloc.max_size();}
+		{return std::allocator_traits<allocator_type>::max_size(_alloc);}
 
 		/** Resizes the container so that it contains n elements.
 		 * If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
@@ -679,14 +679,14 @@ namespace container
 			// Ensure tape has enought space and set _start ptr at optimal place
 			if(_capacity < n)
 			{
-				_alloc.deallocate(_base, _capacity);
+				std::allocator_traits<allocator_type>::deallocate(_alloc, _base, _capacity);
 				_capacity = 0;
-				_base     = 0;
+				_base     = nullptr;
 			}
 			if(_capacity == 0)
 			{
 				_capacity = 3*n;
-				_base  = _alloc.allocate(_capacity);
+				_base  = std::allocator_traits<allocator_type>::allocate(_alloc, _capacity);
 				_start = _base + n;
 				_size  = 0;
 			}
@@ -699,14 +699,14 @@ namespace container
 			_size = n;
 			if(n == 1)
 			{
-				_alloc.construct(_start, *first);
+				std::allocator_traits<allocator_type>::construct(_alloc, _start, *first);
 			}
 			else
 			{
 				pointer ptr = _start;
 				while(first != last)
 				{
-					_alloc.construct(ptr++, *first++);
+					std::allocator_traits<allocator_type>::construct(_alloc, ptr++, *first++);
 				}
 			}
 		}
@@ -720,14 +720,14 @@ namespace container
 			// Ensure tape has enought space and set _start ptr at optimal place
 			if(_capacity < n)
 			{
-				_alloc.deallocate(_base, _capacity);
+				std::allocator_traits<allocator_type>::deallocate(_alloc, _base, _capacity);
 				_capacity = 0;
-				_base     = 0;
+				_base     = nullptr;
 			}
 			if(_capacity == 0)
 			{
 				_capacity = 3*n;
-				_base  = _alloc.allocate(_capacity);
+				_base  = std::allocator_traits<allocator_type>::allocate(_alloc, _capacity);
 				_start = _base + n;
 				_size  = 0;
 			}
@@ -741,7 +741,7 @@ namespace container
 			pointer ptr = _start;
 			while(n--)
 			{
-				_alloc.construct(ptr++, val);
+				std::allocator_traits<allocator_type>::construct(_alloc, ptr++, val);
 			}
 		}
 
@@ -759,7 +759,7 @@ namespace container
 		{
 			if(capacity_after() < 1)
 				reserve_after(64); // TODO Compute reservation size smarter.
-			_alloc.construct(_start+_size++, val);
+			std::allocator_traits<allocator_type>::construct(_alloc, _start+_size++, val);
 		}
 
 		/** Adds n new elements at the end of the tape, after its current last element. The content of val is copied to the new element. */
@@ -768,7 +768,7 @@ namespace container
 			if(capacity_after() < n)
 				reserve_after(n+64); // TODO Compute reservation size smarter.
 			while(n--)
-				_alloc.construct(_start+_size++, val);
+				std::allocator_traits<allocator_type>::construct(_alloc, _start+_size++, val);
 		}
 
 		/** Adds new elements at the end of the tape, after its current last element. The content of val is copied to the new element. */
@@ -779,7 +779,7 @@ namespace container
 			{
 				if(capacity_after() < 1)
 					reserve_after(64); // TODO Compute reservation size smarter.
-				_alloc.construct(_start+(_size++), *first);				
+				std::allocator_traits<allocator_type>::construct(_alloc, _start+(_size++), *first);
 			}
 		}
 
@@ -788,7 +788,7 @@ namespace container
 		{
 			if(capacity_after() < 1)
 				reserve_after(64); // TODO Compute reservation size smarter.
-			_alloc.construct(_start+_size++, std::move(value));
+			std::allocator_traits<allocator_type>::construct(_alloc, _start+_size++, std::move(value));
 		}
 
 		/** Adds a new element at the end of the tape, after its current last element. The new element is constructed emplace. */
@@ -802,7 +802,7 @@ namespace container
 		{
 			if(capacity_after() < 1)
 				reserve_after(64); // TODO Compute reservation size smarter.
-			_alloc.construct(_start+_size++, std::forward<Args>(args)...);
+			std::allocator_traits<allocator_type>::construct(_alloc, _start+_size++, std::forward<Args>(args)...);
 #if   __cplusplus >= 201703L // (since C++17)
 			return back();
 #endif
@@ -813,7 +813,7 @@ namespace container
 		{
 			if(_size>0)
 			{
-				_alloc.destroy(_start + --_size);
+				std::allocator_traits<allocator_type>::destroy(_alloc, _start + --_size);
 			}
 		}
 
@@ -822,7 +822,7 @@ namespace container
 		{
 			while(_size>0 && n-->0)
 			{
-				_alloc.destroy(_start + --_size);
+				std::allocator_traits<allocator_type>::destroy(_alloc, _start + --_size);
 			}
 		}
 
@@ -831,7 +831,7 @@ namespace container
 		{
 			if(capacity_before() < 1)
 				reserve_before(64); // TODO Compute reservation size smarter.
-			_alloc.construct(--_start, val);
+			std::allocator_traits<allocator_type>::construct(_alloc, --_start, val);
 			++_size;
 		}
 
@@ -842,7 +842,7 @@ namespace container
 				reserve_before(n + 64); // TODO Compute reservation size smarter.
 			_size += n;
 			while(n--)
-				_alloc.construct(--_start, val);
+				std::allocator_traits<allocator_type>::construct(_alloc, --_start, val);
 		}
 
 		/** Adds new elements at the begining of the tape, before its current first element. The content of val is copied to the new element. */
@@ -863,7 +863,7 @@ namespace container
 			pointer ptr = _start;
 			while(n--)
 			{
-				_alloc.construct(ptr++, *(first++));
+				std::allocator_traits<allocator_type>::construct(_alloc, ptr++, *(first++));
 			}
 		}
 
@@ -872,7 +872,7 @@ namespace container
 		{
 			if(capacity_before() < 1)
 				reserve_before(64); // TODO Compute reservation size smarter.
-			_alloc.construct(--_start, std::move(value));
+			std::allocator_traits<allocator_type>::construct(_alloc, --_start, std::move(value));
 			++_size;
 		}
 
@@ -887,7 +887,7 @@ namespace container
 		{
 			if(capacity_before() < 1)
 				reserve_before(64); // TODO Compute reservation size smarter.
-			_alloc.construct(--_start, std::forward<Args>(args)...);
+			std::allocator_traits<allocator_type>::construct(_alloc, --_start, std::forward<Args>(args)...);
 			++_size;
 #if   __cplusplus >= 201703L // (since C++17)
 			return front();
@@ -899,7 +899,7 @@ namespace container
 		{
 			if(_size>0)
 			{
-				_alloc.destroy(_start);
+				std::allocator_traits<allocator_type>::destroy(_alloc, _start);
 				++_start;
 				--_size;
 			}
@@ -910,7 +910,7 @@ namespace container
 		{
 			while(_size>0 && n-->0)
 			{
-				_alloc.destroy(_start++);
+				std::allocator_traits<allocator_type>::destroy(_alloc, _start++);
 				--_size;
 			}
 		}
@@ -931,7 +931,7 @@ namespace container
 			++_size;
 
 			// Insert element
-			_alloc.construct(_start + pos, val);
+			std::allocator_traits<allocator_type>::construct(_alloc, _start + pos, val);
 
 			return iterator(_start + pos);
 		}
@@ -952,7 +952,7 @@ namespace container
 			++_size;
 
 			// Insert element
-			_alloc.construct(_start + pos, std::move(val));
+			std::allocator_traits<allocator_type>::construct(_alloc, _start + pos, std::move(val));
 
 			return iterator(_start + pos);
 		}
@@ -974,7 +974,7 @@ namespace container
 			++_size;
 
 			// Insert element
-			_alloc.construct(_start + pos, std::forward<Args>(args)...);
+			std::allocator_traits<allocator_type>::construct(_alloc, _start + pos, std::forward<Args>(args)...);
 
 			return iterator(_start + pos);
 		}
@@ -997,7 +997,7 @@ namespace container
 
 			// Insert elements
 			for(pointer ptr = _start + pos; ptr < _start + pos + count; ++ptr)
-				_alloc.construct(ptr, val);
+				std::allocator_traits<allocator_type>::construct(_alloc, ptr, val);
 
 			return iterator(_start + pos);
 		}
@@ -1025,7 +1025,7 @@ namespace container
 				
 				// Insert elements
 				for(pointer ptr = _start + pos; first != last; ++ptr, first++)
-					_alloc.construct(ptr, *first);
+					std::allocator_traits<allocator_type>::construct(_alloc, ptr, *first);
 			}
 			return iterator(_start + pos);
 		}
@@ -1044,7 +1044,7 @@ namespace container
 			pointer ptr = position.get_ptr();
 
 			// Destroy erased element
-			_alloc.destroy(ptr);
+			std::allocator_traits<allocator_type>::destroy(_alloc, ptr);
 			
 			// Move content
 			_internal_move(ptr, ptr+1, end().get_ptr());
@@ -1064,7 +1064,7 @@ namespace container
 
 				// Destroy all erased elements
 				for(const_iterator cur = first; cur != last; ++cur)
-					_alloc.destroy(cur.get_ptr());
+					std::allocator_traits<allocator_type>::destroy(_alloc, cur.get_ptr());
 
 				// Move content
 				_internal_move(first.get_ptr(), last.get_ptr(), _start + _size);
@@ -1124,8 +1124,8 @@ namespace container
 		{
 			if(_capacity)
 			{
-				_alloc.deallocate(_base, _capacity);
-				_base = _start = 0;
+				std::allocator_traits<allocator_type>::deallocate(_alloc, _base, _capacity);
+				_base = _start = nullptr;
 				_capacity = _size = 0;
 			}
 		}
@@ -1133,14 +1133,14 @@ namespace container
 		/** Destroy an element. */
 		void _destroy(value_type* p)
 		{
-			_alloc.destroy(p);
+			std::allocator_traits<allocator_type>::destroy(_alloc, p);
 		}
 			
 		/** Destroy n contigous elements. */
 		void _destroy_n(value_type* p, size_type n)
 		{
 			for(;n--;++p)
-				_alloc.destroy(p);
+				std::allocator_traits<allocator_type>::destroy(_alloc, p);
 		}
 			
 		/** Destroy all elements in the tape and set size to 0. */
@@ -1156,8 +1156,9 @@ namespace container
 		{
 			while(n--)
 			{
-				_alloc.construct(dst++, *src);
-				_alloc.destroy(src++);
+				// TODO Optimize this (use of std::uninitialized_copy ?)
+				std::allocator_traits<allocator_type>::construct(_alloc, dst++, *src);
+				std::allocator_traits<allocator_type>::destroy(_alloc, src++);
 			}
 		}
 
@@ -1166,8 +1167,9 @@ namespace container
 		{
 			while(src_begin!=src_end)
 			{
-				_alloc.construct(dst++, *src_begin);
-				_alloc.destroy(src_begin++);
+				// TODO Optimize this (use of std::uninitialized_copy ?)
+				std::allocator_traits<allocator_type>::construct(_alloc, dst++, *src_begin);
+				std::allocator_traits<allocator_type>::destroy(_alloc, src_begin++);
 			}
 		}
 
@@ -1177,7 +1179,7 @@ namespace container
 			size_type capa = before + after + _size;
 			
 			// Allocate new memory
-			pointer mem = capa>0 ? _alloc.allocate(capa, _base) : NULL;
+			pointer mem = capa>0 ? std::allocator_traits<allocator_type>::allocate(_alloc, capa, _base) : nullptr;
 			
 			// Move existing elements
 			_internal_move(mem+before, _start, _size);
@@ -1185,7 +1187,7 @@ namespace container
 			
 			// Release old memory
 			if(_base)
-				_alloc.deallocate(_base, _capacity);
+				std::allocator_traits<allocator_type>::deallocate(_alloc, _base, _capacity);
 
 			// Reset pointers
 			_base     = mem;
